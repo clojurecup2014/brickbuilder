@@ -2,27 +2,51 @@
 
 (def tile-defs
   {:play {:type :play
-          :group :action}
+          :group :action
+          :attached-to nil
+          :next nil}
    :loop {:type :loop
-          :group :flow}
+          :group :flow
+          :next-after-loop nil}
    :motor-this-way {:type :motor-this-way
-                    :group :action}
+                    :group :action
+                    :value nil
+                    :attached-to nil
+                    :next nil}
    :motor-that-way {:type :motor-that-way
-                    :group :action}
+                    :group :action
+                    :value nil
+                    :attached-to nil
+                    :next nil}
    :motor-stop {:type :motor-stop
-                :group :action}
+                :group :action
+                :attached-to nil
+                :next nil}
    :wait-for {:type :wait-for
-              :group :action}
+              :group :action
+              :attached-to nil
+              :next-after-wait nil}
    :tilt-forward {:type :tilt-forward
-                  :group :sensor}
+                  :group :sensor
+                  :attached-to nil}
    :tilt-backward {:type :tilt-backward
-                   :group :sensor}
+                   :group :sensor
+                   :attached-to nil}
    :distance-smaller-than {:type :distance-smaller-than
-                           :group :sensor}
+                           :group :sensor
+                           :attached-to nil
+                           :value nil}
    :distance-greater-than {:type :distance-greater-than
-                           :group :sensor}
+                           :group :sensor
+                           :attached-to nil
+                           :value nil}
    :numeric-input {:type :numeric-input
-                   :group :numeric-input}})
+                   :group :input
+                   :value 0
+                   :attached-to nil}})
+
+(defn prepare-toolbox [api]
+  (reduce-kv (fn [m k v] (assoc m k (assoc v :api api))) {} tile-defs))
 
 (declare apply-logic)
 

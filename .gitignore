@@ -1,3 +1,4 @@
+deploy.sh
 pom.xml
 *jar
 /lib/

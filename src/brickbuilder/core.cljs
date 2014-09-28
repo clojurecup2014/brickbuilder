@@ -1,6 +1,7 @@
 (ns brickbuilder.core
   (:require [om.core :as om :include-macros true]
-            [om.dom :as dom :include-macros true]))
+            [om.dom :as dom :include-macros true]
+            [brickbuilder.bricks :as bricks]))
 
 (enable-console-print!)
 

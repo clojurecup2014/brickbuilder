@@ -1,5 +1,7 @@
 (ns brickbuilder.bricks)
 
+(enable-console-print!)
+
 (def tile-defs
   {:play {:type :play
           :group :action
@@ -48,71 +50,77 @@
 (defn prepare-toolbox [api]
   (reduce-kv (fn [m k v] (assoc m k (assoc v :api api))) {} tile-defs))
 
-(declare apply-logic)
+(declare execute)
 
-(defn execute [tiles last-result {:keys [next] :as tile}]
-  (when tile
-    (let [result (apply-logic tiles last-result tile)]
-      (if next
-        (recur tiles result (tiles next))
-        result))))
+(defn get-tile [tiles tile-id]
+  (tiles tile-id))
 
-(defmulti apply-logic (fn [_ _ {:keys [type]}] type))
+(defn execute-next [tiles result {:keys [next] :as tile}]
+  (if next
+    (execute tiles result (get-tile tiles next))
+    result))
 
-(defmethod apply-logic :default [tiles last-result tile])
+(defmulti execute (fn [_ _ {:keys [type]}] type))
 
-(defmethod apply-logic :wait-for [tiles last-result
-                                  {:keys [condition next-after-wait] :as tile}]
+(defmethod execute :default [tiles last-result tile]
+  (execute-next tiles nil tile))
+
+(defmethod execute :wait-for [tiles last-result
+                              {:keys [condition] :as tile}]
   (if (number? condition)
     (js/setTimeout (fn []
-                     (execute tiles nil (tiles next-after-wait)))
+                     (execute-next tiles nil tile))
                    (* 1000 condition))
-    (if (execute tiles nil condition)
-      (execute tiles nil (tiles next-after-wait))
+    (if (execute tiles nil (get-tile tiles condition))
+      (execute-next tiles nil tile)
       (js/setTimeout (fn [] (execute tiles nil tile)) 200)))
   nil)
 
-(defmethod apply-logic :play [_ _ tile]
-  (println "Play got pressed!"))
+(defmethod execute :play [tiles _ tile]
+  (println "Play got pressed!")
+  (execute-next tiles nil tile))
 
-(defmethod apply-logic :loop [tiles _
-                              {:keys [block condition next-after-loop] :as tile}]
-  (if (execute tiles _ condition)
-    (execute tiles nil (tiles next-after-loop))
-    (execute tiles nil (tiles block))))
+(defmethod execute :loop [tiles _
+                          {:keys [block condition] :as tile}]
+  (if (execute tiles nil (get-tile tiles condition))
+    (execute-next tiles nil tile)
+    (execute tiles nil (get-tile tiles block))))
 
-(defmethod apply-logic :motor-this-way [tiles _ {:keys [value api]}]
+(defmethod execute :motor-this-way [tiles _ {:keys [value api] :as tile}]
   (if value
-    (let [power (execute tiles nil value)]
-      ((:set-motor api) value))
-    ((:set-motor api) (:max-motor-power api))))
+    (let [power (execute tiles nil (get-tile tiles value))]
+      ((:set-motor api) power))
+    ((:set-motor api) (:max-motor-power api)))
+  (execute-next tiles nil tile))
 
-(defmethod apply-logic :motor-that-way [tiles _ {:keys [value api]}]
+(defmethod execute :motor-that-way [tiles _ {:keys [value api] :as tile}]
   (if value
-    (let [power (execute tiles nil value)]
-      ((:set-motor api) (- value)))
-    ((:set-motor api) (- (:max-motor-power api)))))
+    (let [power (execute tiles nil (get-tile tiles value))]
+      ((:set-motor api) (- power)))
+    ((:set-motor api) (- (:max-motor-power api))))
+  (execute-next tiles nil tile))
 
-(defmethod apply-logic :motor-stop [_ _ {:keys [api]}]
-  ((:set-motor api) 0))
+(defmethod execute :motor-stop [tiles _ {:keys [api] :as tile}]
+  ((:set-motor api) 0)
+  (execute-next tiles nil tile))
 
-(defmethod apply-logic :distance-smaller-than [tiles _ {:keys [value api]}]
+(defmethod execute :distance-smaller-than [tiles _ {:keys [value api] :as tile}]
   (if value
-    (execute tiles (fn [n] (< (:distance api) n)) value)
+    (execute tiles (fn [n] (< (:distance api) n)) (get-tile tiles value))
     (< ((:distance api)) (:min-distance api))))
 
-(defmethod apply-logic :distance-greater-than [tiles _ {:keys [value api]}]
+(defmethod execute :distance-greater-than [tiles _ {:keys [value api] :as tile}]
   (if value
-    (execute tiles (fn [n] (> (:distance api) n)) value)
+    (execute tiles (fn [n] (> (:distance api) n)) (get-tile tiles value))
     (> ((:distance api)) (:min-distance api))))
 
-(defmethod apply-logic :tilt-forward [_ _ {:keys [api]}]
+(defmethod execute :tilt-forward [tiles _ {:keys [api]}]
   (= ((:tilt api)) :forward))
 
-(defmethod apply-logic :tilt-backward [_ _ {:keys [api]}]
+(defmethod execute :tilt-backward [tiles _ {:keys [api]}]
   (= ((:tilt api)) :backward))
 
-(defmethod apply-logic :numeric-input [tiles last-result {:keys [value] :as tile}]
+(defmethod execute :numeric-input [tiles last-result {:keys [value] :as tile}]
   (if (fn? last-result)
     (last-result value)
     value))
@@ -124,7 +132,7 @@
    2 {:type :wait-for
       :group :action
       :attached-to 1
-      :next-after-wait 3
+      :next 3
       :condition 5}
    3 {:type :motor-this-way
       :group :action

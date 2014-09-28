@@ -5,45 +5,78 @@
 (def tile-defs
   {:play {:type :play
           :group :action
+          :can-attach-to #{[:action :next]}
+          :slots {:next :east}
           :attached-to nil
           :next nil}
    :loop {:type :loop
           :group :flow
-          :next-after-loop nil}
+          :can-attach-to #{[:action :next]}
+          :slots {:next :east, :condition :south, :block :west}
+          :attached-to nil
+          :next nil}
    :motor-this-way {:type :motor-this-way
                     :group :action
+                    :can-attach-to #{[:action :next]
+                                     [:flow :next]}
+                    :slots {:next :east, :value :south}
                     :value nil
                     :attached-to nil
                     :next nil}
    :motor-that-way {:type :motor-that-way
                     :group :action
+                    :can-attach-to #{[:action :next]
+                                     [:flow :next]}
+                    :slots {:next :east, :value :south}
                     :value nil
                     :attached-to nil
                     :next nil}
    :motor-stop {:type :motor-stop
                 :group :action
+                :can-attach-to #{[:action :next]
+                                 [:flow :next]}
+                :slots {:next :east}
                 :attached-to nil
                 :next nil}
    :wait-for {:type :wait-for
               :group :action
+              :can-attach-to #{[:action :next]
+                               [:flow :next]}
+              :slots {:next :east, :condition :south}
               :attached-to nil
-              :next-after-wait nil}
+              :next nil}
    :tilt-forward {:type :tilt-forward
                   :group :sensor
+                  :can-attach-to #{[:action :condition]
+                                   [:flow :condition]}
+                  :slots {:value :south}
                   :attached-to nil}
    :tilt-backward {:type :tilt-backward
                    :group :sensor
+                   :can-attach-to #{[:action :condition]
+                                    [:flow :condition]}
+                   :slots {:value :south}
                    :attached-to nil}
    :distance-smaller-than {:type :distance-smaller-than
                            :group :sensor
+                           :can-attach-to #{[:action :condition]
+                                            [:flow :condition]}
+                           :slots {:value :south}
                            :attached-to nil
                            :value nil}
    :distance-greater-than {:type :distance-greater-than
                            :group :sensor
+                           :can-attach-to #{[:action :condition]
+                                            [:flow :condition]}
+                           :slots {:value :south}
                            :attached-to nil
                            :value nil}
    :numeric-input {:type :numeric-input
                    :group :input
+                   :can-attach-to #{[:sensor :value]
+                                    [:action :condition]
+                                    [:action :value]}
+                   :slots {}
                    :value 0
                    :attached-to nil}})
 
